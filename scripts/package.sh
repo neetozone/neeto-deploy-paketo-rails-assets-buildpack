@@ -69,6 +69,26 @@ function main {
     buildpack_type=extension
   fi
 
+  # Read targets from buildpack.toml
+  local -a targets=()
+  local buildpack_toml="${ROOT_DIR}/buildpack.toml"
+  if [[ -f "${buildpack_toml}" ]]; then
+    util::print::info "Reading targets from ${buildpack_toml}..."
+    local targets_json
+    targets_json=$(cat "${buildpack_toml}" | yj -tj | jq -r '.targets[]? | "\(.os)/\(.arch)"' 2>/dev/null || echo "")
+    
+    if [[ -n "${targets_json}" ]]; then
+      while IFS= read -r target; do
+        if [[ -n "${target}" ]]; then
+          targets+=("${target}")
+        fi
+      done <<< "${targets_json}"
+      util::print::info "Found ${#targets[@]} target(s) in buildpack.toml: ${targets[*]}"
+    fi
+  fi
+
+  # For rails-assets (like MRI), create a single archive with both architectures
+  # The publish script will handle filtering by architecture
   buildpack::archive "${version}" "${buildpack_type}"
   buildpackage::create "${output}" "${buildpack_type}"
 }
@@ -78,6 +98,8 @@ function usage() {
 package.sh --version <version> [OPTIONS]
 
 Packages a buildpack or an extension into a buildpackage .cnb file.
+
+Targets are automatically read from buildpack.toml [[targets]] sections.
 
 OPTIONS
   --help               -h            prints the command usage
@@ -103,6 +125,10 @@ function tools::install() {
   token="${1}"
 
   util::tools::pack::install \
+    --directory "${BIN_DIR}" \
+    --token "${token}"
+
+  util::tools::yj::install \
     --directory "${BIN_DIR}" \
     --token "${token}"
 
@@ -138,31 +164,62 @@ function buildpack::archive() {
 }
 
 function buildpackage::create() {
-  local output
+  local output buildpack_type
   output="${1}"
   buildpack_type="${2}"
+  shift 2
+  local targets=("${@:-}")
 
   util::print::title "Packaging ${buildpack_type}... ${output}"
+
+  # Determine archive path based on target
+  local archive_path="${BUILD_DIR}/buildpack.tgz"
+  if [[ ${#targets[@]} -eq 1 ]]; then
+    local arch
+    arch=$(echo "${targets[0]}" | cut -d'/' -f2)
+    archive_path="${BUILD_DIR}/buildpack-${arch}.tgz"
+    if [[ ! -f "${archive_path}" ]]; then
+      archive_path="${BUILD_DIR}/buildpack.tgz"
+    fi
+  fi
 
   if [ "$buildpack_type" == "extension" ]; then
     cwd=$(pwd)
     cd ${BUILD_DIR}
-    mkdir cnbdir
+    mkdir -p cnbdir
     cd cnbdir
-    cp ../buildpack.tgz .
-    tar -xvf buildpack.tgz
-    rm buildpack.tgz
+    cp "${archive_path}" .
+    tar -xvf buildpack*.tgz
+    rm buildpack*.tgz
 
-    pack \
-      extension package "${output}" \
-        --format file
+    pack_args=(
+      extension package "${output}"
+      --format file
+    )
+    
+    if [[ ${#targets[@]} -gt 0 ]]; then
+      for target in "${targets[@]}"; do
+        pack_args+=(--target "${target}")
+      done
+    fi
+
+    pack "${pack_args[@]}"
 
     cd $cwd
   else
-    pack \
-      buildpack package "${output}" \
-        --path "${BUILD_DIR}/buildpack.tgz" \
-        --format file
+    pack_args=(
+      buildpack package "${output}"
+      --path "${archive_path}"
+      --format file
+    )
+    
+    if [[ ${#targets[@]} -gt 0 ]]; then
+      for target in "${targets[@]}"; do
+        pack_args+=(--target "${target}")
+      done
+    fi
+
+    pack "${pack_args[@]}"
   fi
 }
 
