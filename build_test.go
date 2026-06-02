@@ -250,6 +250,33 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			})
 		})
 
+		context("when there are package.json and yarn.lock files", func() {
+			it.Before(func() {
+				Expect(os.RemoveAll(filepath.Join(workingDir, "app", "assets"))).To(Succeed())
+				Expect(os.WriteFile(filepath.Join(workingDir, "package.json"), []byte("{}"), 0600)).To(Succeed())
+				Expect(os.WriteFile(filepath.Join(workingDir, "yarn.lock"), []byte(""), 0600)).To(Succeed())
+			})
+
+			it("includes them in the checksum so dependency changes invalidate the cache", func() {
+				_, err := build(packit.BuildContext{
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Stack:      "some-stack",
+					BuildpackInfo: packit.BuildpackInfo{
+						Name:    "Some Buildpack",
+						Version: "some-version",
+					},
+					Layers: packit.Layers{Path: layersDir},
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(calculator.SumCall.Receives.Paths).To(Equal([]string{
+					filepath.Join(workingDir, "package.json"),
+					filepath.Join(workingDir, "yarn.lock"),
+				}))
+			})
+		})
+
 		context("when there are extra assets directories", func() {
 			it.Before(func() {
 				os.Setenv("BP_RAILS_ASSETS_EXTRA_SOURCE_PATHS", "custom/assets")
