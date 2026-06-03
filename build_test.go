@@ -250,11 +250,13 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			})
 		})
 
-		context("when there are package.json and yarn.lock files", func() {
+		context("when there are JS dependency manifests and lockfiles", func() {
 			it.Before(func() {
 				Expect(os.RemoveAll(filepath.Join(workingDir, "app", "assets"))).To(Succeed())
-				Expect(os.WriteFile(filepath.Join(workingDir, "package.json"), []byte("{}"), 0600)).To(Succeed())
-				Expect(os.WriteFile(filepath.Join(workingDir, "yarn.lock"), []byte(""), 0600)).To(Succeed())
+				Expect(os.WriteFile(filepath.Join(workingDir, "package.json"), []byte("{}"), 0644)).To(Succeed())
+				Expect(os.WriteFile(filepath.Join(workingDir, "yarn.lock"), []byte(""), 0644)).To(Succeed())
+				Expect(os.WriteFile(filepath.Join(workingDir, "package-lock.json"), []byte("{}"), 0644)).To(Succeed())
+				Expect(os.WriteFile(filepath.Join(workingDir, "pnpm-lock.yaml"), []byte(""), 0644)).To(Succeed())
 			})
 
 			it("includes them in the checksum so dependency changes invalidate the cache", func() {
@@ -273,6 +275,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				Expect(calculator.SumCall.Receives.Paths).To(Equal([]string{
 					filepath.Join(workingDir, "package.json"),
 					filepath.Join(workingDir, "yarn.lock"),
+					filepath.Join(workingDir, "package-lock.json"),
+					filepath.Join(workingDir, "pnpm-lock.yaml"),
 				}))
 			})
 		})

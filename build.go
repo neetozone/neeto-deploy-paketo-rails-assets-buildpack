@@ -49,8 +49,9 @@ type EnvironmentSetup interface {
 //   extra directories defined by the user.
 //   2. Calculate a checksum of the asset directories that appear in the
 //   working directory. These directories include app/assets, lib/assets,
-//   vendor/assets, app/javascript, the package.json and yarn.lock JS
-//   dependency manifests, and the user defined checksum directories.
+//   vendor/assets, app/javascript, the JS dependency manifests and
+//   lockfiles (package.json, yarn.lock, package-lock.json, pnpm-lock.yaml),
+//   and the user defined checksum directories.
 //   3. Compare the calculated checksum against the recorded value on the
 //   "assets" layer metadata.
 //   3a. If the checksum matches the recorded value, the build process
@@ -93,10 +94,12 @@ func Build(
 			// source from node_modules, so a dependency or lockfile change can
 			// alter compiled output without touching any of the directories
 			// above. Including these makes such changes invalidate the cache and
-			// trigger a fresh precompile. Each is existence-filtered below, so
-			// non-JS apps are unaffected.
+			// trigger a fresh precompile. Cover yarn, npm and pnpm lockfiles.
+			// Each is existence-filtered below, so non-JS apps are unaffected.
 			filepath.Join(context.WorkingDir, "package.json"),
 			filepath.Join(context.WorkingDir, "yarn.lock"),
+			filepath.Join(context.WorkingDir, "package-lock.json"),
+			filepath.Join(context.WorkingDir, "pnpm-lock.yaml"),
 		}
 
 		extraPaths := filepath.SplitList(os.Getenv("BP_RAILS_ASSETS_EXTRA_SOURCE_PATHS"))
