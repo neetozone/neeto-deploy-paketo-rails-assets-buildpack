@@ -12,7 +12,9 @@ To package this buildpack for consumption:
 ./scripts/package.sh --version 0.10.27
 ```
 
-This will build the buildpack for all target architectures specified in `buildpack.toml` (amd64 and arm64 by default) and create a single archive containing binaries for all architectures in the `build/` directory.
+This will build the buildpack for all target architectures specified in
+`buildpack.toml` (amd64 and arm64 by default) and create a single archive
+containing binaries for all architectures in the `build/` directory.
 
 ## Publishing
 
@@ -26,7 +28,8 @@ To publish this buildpack to ECR:
 The script will automatically:
 - Read target architectures from `buildpack.toml`
 - Extract the buildpack archive
-- Publish each architecture separately with arch-suffixed tags (e.g., `rails-assets:0.10.27-amd64`, `rails-assets:0.10.27-arm64`)
+- Publish each architecture separately with arch-suffixed tags (e.g.,
+  `rails-assets:0.10.27-amd64`, `rails-assets:0.10.27-arm64`)
 - Create and push a multi-arch manifest list
 
 ## Logging Configurations
@@ -47,17 +50,20 @@ $BP_LOG_LEVEL="DEBUG"
 
 ## Configuring Exta Assets Directories
 
-By default, the `assets:precompile` command reads assets from a set of specific application paths, such as
-`app/assets`, `app/javascript`, `lib/assets` and `vendor/assets`. These directories contain the
-source files that need to be precompiled and optimized for production use. The precompiled assets
-resulted from running this command are then placed in different directories, such
-as `public/assets`, `public/packs` and `tmp/cache/assets`.
+By default, the `assets:precompile` command reads assets from a set of specific
+application paths, such as `app/assets`, `app/javascript`, `lib/assets` and
+`vendor/assets`. These directories contain the source files that need to be
+precompiled and optimized for production use. The precompiled assets resulted
+from running this command are then placed in different directories, such as
+`public/assets`, `public/packs` and `tmp/cache/assets`.
 
-Any gem can override the behavior of the `assets:precompile` command, and use different directories
-to either read source assets or write the precompilation results. It is possible to set a list of
-additional source directories using the `$BP_RAILS_ASSETS_EXTRA_SOURCE_PATHS` environment variable.
-In the same way, to set a list of additional destination paths, use `$BP_RAILS_ASSETS_EXTRA_DESTINATION_PATHS`.
-Both variables have the same notation of the `$PATH` system variable.
+Any gem can override the behavior of the `assets:precompile` command, and use
+different directories to either read source assets or write the precompilation
+results. It is possible to set a list of additional source directories using the
+`$BP_RAILS_ASSETS_EXTRA_SOURCE_PATHS` environment variable. In the same way, to
+set a list of additional destination paths, use
+`$BP_RAILS_ASSETS_EXTRA_DESTINATION_PATHS`. Both variables have the same
+notation of the `$PATH` system variable.
 
 ```bash
 # adds app/my_gem/assets and lib/other_gem/assets to
@@ -70,4 +76,5 @@ BP_RAILS_ASSETS_EXTRA_SOURCE_PATHS="app/my_gem/assets:lib/other_gem/assets"
 BP_RAILS_ASSETS_EXTRA_DESTINATION_PATHS="public/my_gem:public/other_gem"
 ```
 
-Like the `$BP_LOG_LEVEL`, you can set those variables either directly with pack cli or using a `project.toml` file.
+Like the `$BP_LOG_LEVEL`, you can set those variables either directly with pack
+cli or using a `project.toml` file.
