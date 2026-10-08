@@ -169,11 +169,19 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 			Expect(os.MkdirAll(filepath.Join(workingDir, "app", "javascript"), os.ModePerm)).To(Succeed())
 		})
 
-		it("fails with an error message", func() {
-			_, err := detect(packit.DetectContext{
+		it("still detects", func() {
+			result, err := detect(packit.DetectContext{
 				WorkingDir: workingDir,
 			})
-			Expect(err).To(MatchError(packit.Fail.WithMessage("failed to find rails gem in Gemfile")))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.Plan).To(Equal(packit.BuildPlan{
+				Provides: []packit.BuildPlanProvision{},
+				Requires: []packit.BuildPlanRequirement{
+					{Name: "mri", Metadata: railsassets.BuildPlanMetadata{Build: true}},
+					{Name: "bundler", Metadata: railsassets.BuildPlanMetadata{Build: true}},
+					{Name: "gems", Metadata: railsassets.BuildPlanMetadata{Build: true}},
+				},
+			}))
 		})
 	})
 
