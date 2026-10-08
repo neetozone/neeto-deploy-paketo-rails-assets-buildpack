@@ -19,7 +19,7 @@ blocks:
           commands:
             - go build ./...
             - go vet ./...
-            - go test ./... -run Unit
+            - env -u RAILS_ENV -u SECRET_KEY_BASE go test ./... -run Unit
 
 triggers:
   - event: branch
